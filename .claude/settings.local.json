@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --yes --skip-install)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(tar -tf design.tar)",
+      "Bash(npx next *)"
+    ]
+  }
+}

@@ -1,0 +1,195 @@
+// prisma/schema.prisma
+// Run: npx prisma migrate dev --name add_users_visitors_notices
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── 1. USER (Staff / Admin accounts) ─────────────────────────────────────
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  phone        String?
+  passwordHash String
+  role         UserRole  @default(staff)
+  isActive     Boolean   @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  notices      Notice[]
+  visitors     Visitor[] @relation("LoggedBy")
+}
+
+// ─── 2. STUDENT ────────────────────────────────────────────────────────────
+model Student {
+  id          String   @id @default(cuid())
+  fullName    String
+  fatherName  String
+  cnic        String   @unique
+  phone       String
+  email       String?
+  bedNo       Int
+  joiningDate DateTime
+  photoUrl    String?
+  status      Status   @default(active)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  room        Room        @relation(fields: [roomId], references: [id])
+  roomId      String
+
+  fees        Fee[]
+  complaints  Complaint[]
+  visitors    Visitor[]
+}
+
+// ─── 3. ROOM ───────────────────────────────────────────────────────────────
+model Room {
+  id         String   @id @default(cuid())
+  roomNumber String   @unique
+  floor      Int
+  type       RoomType
+  capacity   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  students   Student[]
+  fees       Fee[]
+  complaints Complaint[]
+}
+
+// ─── 4. FEE ────────────────────────────────────────────────────────────────
+model Fee {
+  id          String       @id @default(cuid())
+  amount      Float
+  month       String
+  status      FeeStatus    @default(unpaid)
+  paymentMode PaymentMode?
+  paymentDate DateTime?
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  student     Student  @relation(fields: [studentId], references: [id])
+  studentId   String
+
+  room        Room     @relation(fields: [roomId], references: [id])
+  roomId      String
+
+  @@unique([studentId, month])
+}
+
+// ─── 5. COMPLAINT ──────────────────────────────────────────────────────────
+model Complaint {
+  id             String            @id @default(cuid())
+  category       ComplaintCategory
+  description    String
+  status         ComplaintStatus   @default(open)
+  resolutionNote String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  student        Student  @relation(fields: [studentId], references: [id])
+  studentId      String
+
+  room           Room     @relation(fields: [roomId], references: [id])
+  roomId         String
+}
+
+// ─── 6. VISITOR (Gate entry/exit log) ──────────────────────────────────────
+model Visitor {
+  id           String        @id @default(cuid())
+  visitorName  String
+  visitorPhone String?
+  cnic         String?
+  purpose      String
+  entryTime    DateTime      @default(now())
+  exitTime     DateTime?
+  status       VisitorStatus @default(inside)
+  remarks      String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  student      Student?  @relation(fields: [studentId], references: [id])
+  studentId    String?
+
+  loggedBy     User      @relation("LoggedBy", fields: [loggedById], references: [id])
+  loggedById   String
+}
+
+// ─── 7. NOTICE (Announcements) ─────────────────────────────────────────────
+model Notice {
+  id          String    @id @default(cuid())
+  title       String
+  content     String
+  priority    Priority  @default(normal)
+  isActive    Boolean   @default(true)
+  publishedAt DateTime  @default(now())
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  postedBy    User     @relation(fields: [postedById], references: [id])
+  postedById  String
+}
+
+// ─── ENUMS ─────────────────────────────────────────────────────────────────
+enum UserRole {
+  admin
+  warden
+  staff
+}
+
+enum Status {
+  active
+  inactive
+}
+
+enum RoomType {
+  TWO_BED
+  FOUR_BED
+  SIX_BED
+}
+
+enum FeeStatus {
+  paid
+  unpaid
+  partial
+}
+
+enum PaymentMode {
+  cash
+  bank_transfer
+  online
+}
+
+enum ComplaintCategory {
+  electricity
+  water
+  cleanliness
+  other
+}
+
+enum ComplaintStatus {
+  open
+  in_progress
+  resolved
+}
+
+enum VisitorStatus {
+  inside
+  exited
+}
+
+enum Priority {
+  low
+  normal
+  high
+  urgent
+}
